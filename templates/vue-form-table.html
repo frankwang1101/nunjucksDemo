@@ -1,0 +1,18 @@
+{% block table %}
+<el-table :data="tableData" highlight-current-row :key="key" style="width: 100%;" :height="tableHeight" @selection-change="selsChange">
+    {% if checked %}
+    <el-table-column fixed type="selection" width="40"></el-table-column>{% endif %}
+    {% for row in data %}
+    <el-table-column prop="{{row.key}}" label="{{row.value}}" min-width="100" {% if col %}v-if="tableColumn{{loop.index0}}"{% endif %}></el-table-column>{% endfor %}
+    <el-table-column fixed="right" label="操作" width="120">
+        <template slot-scope="scope">
+            <el-button size="small" @click="handleEdit(scope.$index, scope.row)">
+                <i class="el-icon-edit"></i>
+            </el-button>
+            <el-button size="small" @click="handleDel(scope.$index, scope.row)">
+                <i class="el-icon-delete"></i>
+            </el-button>
+        </template>
+    </el-table-column>
+</el-table>
+{% endblock %}

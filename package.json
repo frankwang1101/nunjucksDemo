@@ -1,0 +1,31 @@
+{
+  "name": "code-generator",
+  "version": "1.0.0",
+  "description": "as u c",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./bin/www"
+  },
+  "keywords": [
+    "code",
+    "gen"
+  ],
+  "author": "frankw",
+  "license": "ISC",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-load-plugins": "^1.5.0",
+    "gulp-nunjucks": "^3.0.0",
+    "gulp-size": "^2.1.0"
+  },
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "cookie-parser": "^1.4.3",
+    "express": "^4.16.2",
+    "jade": "^1.11.0",
+    "morgan": "^1.9.0",
+    "qs": "^6.5.1",
+    "serve-favicon": "^2.4.5"
+  }
+}

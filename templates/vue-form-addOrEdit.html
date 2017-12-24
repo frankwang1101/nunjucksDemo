@@ -1,0 +1,33 @@
+{% macro field(type, name, label, data) %}
+<el-dialog title="{{label}}{{ '新增' if type == 'add' else '编辑' }}" :visible.sync="{{type}}DialogVisible" size="small">
+    <el-form :model="{{name}}" ref="{{name}}" label-width="140px" style="height: 320px; overflow-x: hidden; overflow-y: auto">
+        {% for row in data %}
+        <el-col :span="16">
+            <el-form-item label="{{row.value}}" prop="{{row.key}}" {% if row.rule != '' %}:rules="{{row.rule}}"{% endif %}>
+                {% if row.type === 'input' %}
+                <el-input v-model="{{name}}.{{row.key}}"></el-input>
+                {% elif row.type === 'textarea' %}
+                <el-input v-model="{{name}}.{{row.key}}" type="textarea"></el-input>
+                {% elif row.type === 'select' %}
+                <el-select v-model="{{name}}.{{row.key}}" placeholder="{{row.placeholder | default(row.placeholder, '')}}">
+                    <el-option v-for="item in {{row.list}}" :key="item.key" :label="item.value" :value="item.key">
+                    </el-option>
+                </el-select>
+                {% elif row.type === 'date' %}
+                <el-date-picker v-model="{{name}}.{{row.key}}" placeholder="{{row.placeholder | default(row.placeholder, '')}}" style="width: 161px">
+                </el-date-picker>
+                {% elif row.type === 'auto' %} 
+                <el-autocomplete class="inline-input" v-model="{{name}}.{{row.key}}" :fetch-suggestions="{{row.auto_suggestion}}" placeholder="{{row.placeholder | default(row.placeholder, '')}}" @select="{{row.auto_select}}"></el-autocomplete>
+                {% elif row.type === 'switch' %} 
+                <el-switch v-model="{{name}}.{{row.key}}" on-text="启用" off-text="禁用"></el-switch>
+                {% endif %}
+            </el-form-item>
+        </el-col>
+        {% endfor %}
+    </el-form>
+    <div slot="footer" class="dialog-footer">
+        <el-button @click="{{type}}DialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="{{type}}Submit('{{name}}')">确 定</el-button>
+    </div>
+</el-dialog>
+{% endmacro %}

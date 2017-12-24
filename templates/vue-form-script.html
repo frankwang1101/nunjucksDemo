@@ -1,0 +1,427 @@
+{% block script %}
+<script>
+    /*引入multiselect插件*/
+    import '../../../static/mutiselect/scripts/jquery'
+    import '../../../static/mutiselect/scripts/jquery.ui.core'
+    import '../../../static/mutiselect/scripts/jquery.ui.widget'
+    import '../../../static/mutiselect/scripts/prettify'
+    import '../../..//static/mutiselect/scripts/jquery.multiselect'
+
+    import axios from 'axios'
+    import util from '../../assets/js/util'
+
+    export default {
+        data() {
+            {% if col %}
+            const shuttleFrameDataGet = _ => {
+                const data = [];
+                const shuttleFrameNameList = [
+                    '代号', '手机号码', '所属运营商', '首次使用日期', '有效期', '流量阈值',
+                    '费用描述', '状态', '存放位置', '采购日期', '采购人', '最后操作人',
+                    '备注', '创建用户', '创建时间', '修改用户', '修改时间',
+                ];
+                shuttleFrameNameList.forEach((categoryItem, index) => {
+                    data.push({
+                        label: categoryItem,
+                        key: index,
+                    });
+                });
+                return data;
+            };
+            {% endif %}
+            return {
+                //结果数据
+                tableData: [],
+                rowSelect: [], //获取表格选择的行，用于批量删除
+                tableHeight: 424,
+                key: 0,
+
+                //关闭校验
+                isActiveValid: true,
+                {% if isPage %}
+                //分页控件属性
+                total: 0,
+                currentPage: 1,
+                pageSize: 10,
+                {% endif %}
+                {% if col %}
+                //穿梭框
+                value: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,], //默认全选
+                shuttleFrameData: shuttleFrameDataGet(), //shuttleFrameData
+                shuttleFrameDialogVisible: false,
+                rightValue: [],
+                direction: '',
+                movedKeys: [],
+                {% for item in data %}tableColumn{{loop.index0}}: {{item.show}},
+                {% endfor %}
+                {% endif %}
+                //搜索
+                {% for item in search %}
+                {{item.key}}: '',//{{item.value}}
+                {% endfor %}
+                addData: {
+                   {% for item in addData %}{{item.key}}: '',//{{item.value}}
+                   {% endfor %}
+                },
+                addDialogVisible: false,
+                editData: {
+                    {% for item in addData %}{{item.key}}: '',//{{item.value}}
+                    {% endfor %}
+                },
+                editDialogVisible: false,
+
+            }
+        },
+        mounted() {
+            //获取数据
+            this.getDataPage(1, 10);
+            //根据屏幕修改tableHeight的值
+            let timeout = false;
+            let _this = this;
+            this.tableHeight = this.$refs.contentEditTable.getBoundingClientRect().height;
+            window.onresize = function () {
+                if (!timeout) { //修复chrome执行两次的bug
+                    timeout = true;
+                    setTimeout(function () {
+                        timeout = false;
+                        _this.tableHeight = _this.$refs.contentEditTable.getBoundingClientRect().height;
+                    }, 500)
+                }
+            };
+            //搜索下拉
+        },
+        methods: {
+            //判断是否校验
+            toggleRuleShow(rule) {
+                return this.isActiveValid ? rule : [];
+            },
+            //页面跳页,每页显示的行数
+            handleCurrentChange(currentPageSelect) {
+                this.currentPage = currentPageSelect;
+                if ( //判断搜索条件是否有值
+                    this.searVehicleNumber != '' ||
+                    this.searVehicleType != ''
+                )
+                    this.handleSearch();
+                else
+                    this.getDataPage(this.currentPage, this.pageSize);
+            },
+            handleSizeChange(pageSizeSelect) {
+                this.pageSize = pageSizeSelect;
+                this.getDataPage(this.currentPage, this.pageSize);
+            },
+            //获取数据
+            getDataPage(pageNumberSend, pageSizeSend) {
+                let para = {
+                    pageNumber: pageNumberSend,
+                    pageSize: pageSizeSend
+                };
+                var self = this;
+                para = util.addURLSearchParams(para);
+                getMsgEmailConfig(para).then(function (res) {
+                    console.log("表格原始数据:");
+                    console.log(res);
+                    self.tableData = self.formatData(res.data);
+                    console.log("从表格原始数据取出要显示的数据：");
+                    console.log(self.tableData);
+                }).catch(function (error) {
+                    console.log(error);
+                    console.log("失败");
+                });
+            },
+            formatData(list) {
+                return list;
+            },
+            //表格新增数据
+            addClick() {
+                this.addDialogVisible = true;
+                if (this.$refs['addData'].resetFields() != undefined) {
+                    this.$refs['addData'].resetFields();
+                }
+                this.$nextTick(() => {$refs.addData.$el.scrollTop = 0
+                })
+            },
+            addSubmit(formName) { //确认
+                var self = this;
+
+                console.log("要新增的数据：");
+                console.log(self.addData);
+
+                self.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        let para = { //把新增的数据赋给对应的参数传给后台
+                            {% for item in addData %}{{item.key}}: self.addData.{{item.key}},//{{item.value}}
+                            {% endfor %}
+                        };
+                        para = util.addURLSearchParams(para);
+                        addMsgEmailConfig(para).then(function (response) {
+                            console.log(response);
+
+                            //方案1：新增成功后，清空查询条件，用初始化数据列表函数
+                            self.handleReSet();
+                            self.currentPage = 1;
+                            self.getDataPage(self.currentPage, self.pageSize); //重新读取数据显示
+
+                            //方案2：新增成功后，还保留查询条件，应该执行查询函数，而不是初始化数据列表函数
+                            //this.handleSearch();
+
+                            if (response.data.code === 1) {
+                                self.$notify({
+                                    title: '成功',
+                                    message: '新增成功！',
+                                    type: 'success',
+                                    duration: 1500
+                                });
+                            } else {
+                                self.$notify({
+                                    title: '错误',
+                                    message: '新增失败！' + response.data.msg,
+                                    type: 'error',
+                                    duration: 1500
+                                });
+                            }
+                        }).catch(function (error) {//加上catch
+                            console.log(error);
+                            self.$notify({
+                                title: '错误',
+                                message: '新增失败！',
+                                type: 'error',
+                                duration: 1500
+                            });
+                        });
+                        self.addDialogVisible = false  //关闭框
+                    }
+                    else {
+                        console.log("新增内容不满足要求，无法提交");
+                    }
+                });
+
+            },
+            //表格编辑
+            handleEdit(index, row) { //获取数据
+                this.editDialogVisible = true;
+                var self = this;
+                getMsgEmailConfigSingle(row.guid).then(function (response) {
+                    console.log("要编辑的原始数据：");
+                    console.log(response);
+                    self.editData = response.data;
+                    console.log("要编辑的数据：");
+                    console.log(self.editData);
+                }).catch(function (error) {
+                    console.log(error);
+                })
+            },
+            editSubmit(formName) { //表格编辑提交更新数据
+                var self = this;
+                self.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        let para = {
+                            {% for item in addData %}{{item.key}}: self.editData.{{item.key}},//{{item.value}}
+                            {% endfor %}
+                        };
+                        para = util.addURLSearchParams(para);
+                        updateMsgEmailConfig(self.editData.guid, para).then(function (response) {
+                            console.log(response);
+                            //编辑成功后，还保留查询条件，应该执行查询函数，而不是初始化数据列表函数
+                            //this.getDataPage(this.currentPage, this.pageSize);
+                            self.handleSearch();
+                            if (response.data.code === 1) {
+                                self.$notify({
+                                    title: '成功',
+                                    message: '更新成功！',
+                                    type: 'success',
+                                    duration: 1500
+                                });
+                            } else {
+                                self.$notify({
+                                    title: '错误',
+                                    message: '更新失败！' + response.data.msg,
+                                    type: 'error',
+                                    duration: 1500
+                                });
+                            }
+                        }).catch(function (error) {
+                            console.log(error);
+                            self.$notify({
+                                title: '错误',
+                                message: '更新失败！',
+                                type: 'error',
+                                duration: 1500
+                            });
+                        });
+                        self.editDialogVisible = false
+                    }
+                    else {
+                        console.log("编辑的内容不满足要求，无法提交");
+                        return false;
+                    }
+                });
+
+
+            },
+            //表格删除
+            handleDel(index, row) {
+                var self = this;
+                self.$confirm("确认删除第" + (index + 1) + "行吗?", "提示", {
+                    type: 'warning',
+                    confirmButtonText: '确认',
+                    cancelButtonText: '取消'
+                }).then(function () {
+                    delMsgEmailConfig(row.guid).then(function (response) {
+                        console.log(response);
+                        self.getDataPage(self.currentPage, self.pageSize);
+                        if (response.data.code === 1) {
+                            self.$notify({
+                                title: '成功',
+                                message: '删除成功！',
+                                type: 'success',
+                                duration: 1500
+                            });
+                        } else {
+                            self.$notify({
+                                title: '错误',
+                                message: '删除失败！' + response.data.msg,
+                                type: 'error',
+                                duration: 1500
+                            });
+                        }
+                    }).catch(function (error) {
+                        console.log(error);
+                        self.$notify({
+                            title: '错误',
+                            message: '删除失败！',
+                            type: 'error',
+                            duration: 1500
+                        });
+                    })
+                })
+            },
+            //搜索和高级搜索
+            handleSearch() {
+                var self = this;
+                //获取下拉框取值
+                let para = { //将搜索条件传给后台
+                    pageNumber: this.currentPage,
+                    pageSize: this.pageSize,
+                    {% for item in search %}{{item.key}}: this.{{item.key}},
+                    {% endfor %}
+                };
+                para = util.addURLSearchParams(para);
+                getMsgEmailConfig(para).then(function (res) {
+                    self.tableData = res.data;
+                    console.log("搜索结果：", res.data);
+                }).catch(function (error) {
+                    console.log(error);
+                    self.$notify({
+                        title: '错误',
+                        message: '报错' + error,
+                        type: 'error',
+                        duration: 1500
+                    });
+                });
+            },
+            //重置
+            handleReSet() { //重置查询条件
+                this.theName = ''; //element的可以直接赋空
+                this.multiSelectClear(); //multiSelect插件需要另外执行
+            },
+            //刷新
+            handleReFresh() {
+                this.handleReSet();
+                this.currentPage = 1;
+                this.getDataPage(this.currentPage, this.pageSize);
+            },
+            {% if col %}
+            shuttleFrameChange(rightValue, direction, movedKeys) {  //rightValue:右边当前值; 移动方向; 移动的数据
+                console.log("穿梭框内容改变了：");
+                console.log(rightValue);
+                console.log(direction);
+                console.log(movedKeys);
+                this.rightValue = rightValue; //赋值
+                this.direction = direction;
+                this.movedKeys = movedKeys;
+
+                
+                //把向左移动的设为false
+                var self = this;
+                self.key = self.key + 1; //解决穿梭框某次切换的时候width变得很大很大很大。
+                if (self.key == 100) self.key = 0; //不需要一直增大
+
+                if (self.direction == 'left') { //向左移动，则将向左移动的设为false
+                    self.movedKeys.forEach(function(currentValue, index, arr) {
+                        self['tableColumn' + currentValue] = false;
+                        console.log(self['tableColumn' + currentValue]);
+                    });
+                }
+                //把右边的设为true
+                self.rightValue.forEach(function(currentValue, index, arr) {
+                    self['tableColumn' + currentValue] = true;
+                });
+
+                //self.shuttleFrameDialogVisible = false;
+                console.log("穿梭框没有关哦");
+                console.log(self.shuttleFrameDialogVisible);
+                self.handleSearch();
+            },
+            {% endif %}
+            showColsSubmit() { //确认之后动作，并最后关闭框
+                //把向左移动的设为false
+                var self = this;
+                self.key = self.key + 1; //解决穿梭框某次切换的时候width变得很大很大很大。
+                if (self.key == 100) self.key = 0; //不需要一直增大
+
+                if (self.direction == 'left') { //向左移动，则将向左移动的设为false
+                    self.movedKeys.forEach(function(currentValue, index, arr) {
+                        self['tableColumn' + currentValue] = false;
+                        console.log(self['tableColumn' + currentValue]);
+                    });
+                }
+                //把右边的设为true
+                self.rightValue.forEach(function(currentValue, index, arr) {
+                    self['tableColumn' + currentValue] = true;
+                });
+
+                self.shuttleFrameDialogVisible = false;
+                console.log("穿梭框没有关哦");
+                console.log(self.shuttleFrameDialogVisible);
+                self.getDataPage(self.currentPage, self.pageSize);
+            },
+            //导出excel
+            exportToExcel() {
+            },
+            //批量删除
+            selsChange(rowSelect) { //获取选择的行，用于批量删除
+                this.rowSelect = rowSelect;
+            },
+            batchRemove() {
+                var self = this;
+                var ids = self.rowSelect.map(item => item.guid);
+                self.$confirm('确认删除选中记录吗？', '提示', {
+                    type: 'warning'
+                }).then(() => {
+                    let para = util.addURLSearchParams({ ids: ids.join(',') });
+                    batchDelMsgEmailConfig(para).then((response) => {
+                        self.listLoading = false;
+                        if (response.data.code === 1) {
+                            self.$notify({
+                                title: '成功',
+                                message: '批量删除成功！',
+                                type: 'success',
+                                duration: 1500
+                            });
+                        } else {
+                            self.$notify({
+                                title: '错误',
+                                message: '批量删除失败！' + response.data.msg,
+                                type: 'error',
+                                duration: 1500
+                            });
+                        }
+                        self.getDataPage(self.currentPage, self.pageSize);
+                    });
+                })
+            },
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,62 @@
+<template>
+    <div class="contentWrapBox">
+        <div class="operation">
+            <div class="leftPart">
+                {% for item in search %}
+                <el-input v-model="{{item.key}}" placeholder="请输入{{item.word}}"></el-input>
+                {% endfor %}
+                <el-button type="success" size="small" @click="handleReSet">重置</el-button>
+                <el-button type="success" size="small" icon="search" @click="handleSearch"></el-button>
+                <el-button type="success" size="small" @click="handleReFresh">刷新</el-button>
+            </div>
+            <div class="rightPart">
+                <span>是否启用校验</span>
+                <el-switch v-model="isActiveValid" on-text="启用" off-text="禁用">
+                </el-switch>
+                {% if col %}<el-button type="success" size="small" icon="caret-bottom" @click="showColsClick"></el-button>{% endif %}
+                <el-button type="success" size="small" icon="plus" @click="addClick"></el-button>
+                <el-button type="success" size="small" icon="document" @click="exportToExcel">导出Excel</el-button>
+                <el-button type="danger" size="small" icon="delete" @click="batchRemove" v-if="this.rowSelect.length!=0">批量删除</el-button>
+            </div>
+        </div>
+        <div class="contentWrap">
+            <div class="contentBox">
+                <div class="content">
+                    <div class="contentTop " ref="contentEditTable">
+                        <div class="editTable">
+                            <template>
+                                {% block table %}{% endblock %}
+                            </template>
+                        </div>
+                    </div>
+                    {% if isPage %}
+                    <div class="pageBox">
+                        <div class="frt">
+                            <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage" :page-size="pageSize"
+                                :page-sizes="[10, 15, 50, 100]" layout="total, sizes, prev, pager, next, jumper" :total="total"
+                                style="float:right;">
+                            </el-pagination>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if col %}
+                    <!--穿梭框 -->
+                    <el-dialog title="自定义列显示" v-model="shuttleFrameDialogVisible" :close-on-click-modal="false">
+                        <el-transfer filterable filter-placeholder="请输入字段名称" :titles="['隐藏','显示']" :data="shuttleFrameData" v-model="value" @change="shuttleFrameChange">
+                        </el-transfer>
+                        <span slot="footer" class="dialog-footer">
+                            <el-button type="primary" size="small" @click="shuttleFrameDialogVisible = false">关闭</el-button>
+                        </span>
+                    </el-dialog>
+                    {% endif %}
+                    <!--新增-->
+                    {% block add %}{% endblock %}
+                    <!--修改-->
+                    {% block edit %}{% endblock %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</template>
+{% block script %}{% endblock %} {% block style %}{% endblock %}

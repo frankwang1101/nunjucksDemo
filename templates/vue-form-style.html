@@ -1,0 +1,38 @@
+{% block style %}
+<style>
+    /*----使用multiselect插件----*/
+
+    @import '../../../static/mutiselect/css/jquery.multiselect.css';
+    @import '../../../static/mutiselect/css/style.css';
+    @import '../../../static/mutiselect/css/prettify.css';
+    @import '../../../static/mutiselect/css/jquery-ui.css';
+    /*----multiselect相关样式的调整----*/
+    /*.selectmulti .ui-widget-content a{font-size: 8px; } 已在jquery-ui.css修改*/
+    /*.selectmulti .ui-multiselect-header span.ui-icon{ display: none;} 已在jquery.multiselect.css修改*/
+
+    .selectmulti .ui-multiselect {
+        margin-top: -7px;
+    }
+
+    .selectmulti:nth-of-type(2) .ui-multiselect {
+        width: 140px!important;
+    }
+
+    .multi-select-buttons {
+        padding: 8px 8px 4px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+    }
+
+    .multi-select-buttons .select-button {
+        width: 30%;
+    }
+    /*调整位置*/
+
+    .leftPart input {
+        /*element输入字体也统一改成12px*/
+        font-size: 12px;
+    }
+</style>
+{% endblock %}

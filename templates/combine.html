@@ -1,0 +1,18 @@
+{% extends "vue-form.html" %}
+{% import "vue-form-addOrEdit.html" as add %}
+
+{% block table %}
+{% include "vue-form-table.html" %}
+{% endblock %}
+{% block add %}
+{{add.field('add','addData','新增', addData)}}
+{% endblock %}
+{% block edit %}
+{{add.field('edit','editData','编辑', addData)}}
+{% endblock %}
+{% block script %}
+{% include "vue-form-script.html" %}
+{% endblock %}
+{% block style %}
+{% include "vue-form-style.html" %}
+{% endblock %}
