@@ -1,10 +1,8 @@
 {% macro field(type, name, label, data) %}
 <el-dialog title="{{label}}{{ '新增' if type == 'add' else '编辑' }}" :visible.sync="{{type}}DialogVisible" size="small">
     <el-form :model="{{name}}" ref="{{name}}" label-width="140px" style="height: 320px; overflow-x: hidden; overflow-y: auto">
-        {% for row in data %}
-        <el-col :span="16">
-            <el-form-item label="{{row.value}}" prop="{{row.key}}" {% if row.rule != '' %}:rules="{{row.rule}}"{% endif %}>
-                {% if row.type === 'input' %}
+        {% for row in data %}<el-col :span="{{row.span}}">
+            <el-form-item label="{{row.value}}" prop="{{row.key}}" {% if row.rule %}:rules="{{row.rule | safe}}"{% endif %}>{% if row.type === 'input' %}
                 <el-input v-model="{{name}}.{{row.key}}"></el-input>
                 {% elif row.type === 'textarea' %}
                 <el-input v-model="{{name}}.{{row.key}}" type="textarea"></el-input>
@@ -20,8 +18,7 @@
                 <el-autocomplete class="inline-input" v-model="{{name}}.{{row.key}}" :fetch-suggestions="{{row.auto_suggestion}}" placeholder="{{row.placeholder | default(row.placeholder, '')}}" @select="{{row.auto_select}}"></el-autocomplete>
                 {% elif row.type === 'switch' %} 
                 <el-switch v-model="{{name}}.{{row.key}}" on-text="启用" off-text="禁用"></el-switch>
-                {% endif %}
-            </el-form-item>
+                {% endif %}</el-form-item>
         </el-col>
         {% endfor %}
     </el-form>
